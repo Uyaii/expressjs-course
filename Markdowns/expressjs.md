@@ -152,6 +152,69 @@ Then you go to your thunder client to test it out
 ## PUT REQUESTS
 So for put requests they're used to update records ie all the fields in a record in the database( eg updating id, username and displayname all at once)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### PROBLEM ENCOUNTERED
+Great to hear that it worked! Here's why the explicit return statement made a difference:
+
+The Problem: Implicit vs. Explicit Return in Arrow Functions
+In JavaScript, arrow functions can have implicit or explicit returns, and this is where the issue occurred.
+
+Your Original Code:
+javascript
+Copy code
+const findUserIndex = mockUsers.findIndex((user) => {
+  user.id === parsedId;
+});
+This version doesn't actually return a value from the arrow function because the curly braces {} create a function body. Once you have a function body, you must use the return keyword to return a value. Without the return, JavaScript doesn't return anything from the function, so it defaults to undefined, which is why findIndex didn't work and kept returning -1.
+
+The Fixed Version:
+javascript
+Copy code
+const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
+Here, there's no {} after the arrow (=>), which means this is an implicit return. In this case, whatever expression follows the arrow (user.id === parsedId) will be automatically returned by the function.
+
+How It Works:
+With {} (Explicit Return Required):
+
+javascript
+Copy code
+(user) => {
+  user.id === parsedId;  // No return statement, so it returns undefined
+}
+In this case, the function body {} is used, so JavaScript expects you to explicitly use return. Since you didn’t have return in your function, it returned undefined.
+
+Without {} (Implicit Return):
+
+javascript
+Copy code
+(user) => user.id === parsedId;
+When you remove the {}, the expression (user.id === parsedId) is automatically returned. This shorthand allows for a more concise syntax when the function body is just one expression.
+
+Why findIndex Fails Without the Return:
+The findIndex method expects the callback function to return true or false for each item. If no value is returned (i.e., undefined), the condition isn't met, so the findIndex method won't find the user and will return -1.
+
+In your original version:
+
+user.id === parsedId was calculated, but the result wasn't returned, so undefined was effectively being returned.
+In the fixed version:
+
+The comparison result (true or false) was returned, so findIndex could work properly.
+Rule of Thumb:
+If you use an arrow function with curly braces {}, you must use return inside the function to return a value.
+If you don't use curly braces, the value is returned implicitly.
+Let me know if you need any further clarification!
 ## PATCH REQUESTS
 Patch requests are used to update records partially ie only 1 or 2 fields in a record (ie updating only username or displayname)
 
