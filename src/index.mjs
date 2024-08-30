@@ -5,6 +5,30 @@ const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
+//MIDDLEWARE FUNCTION
+// const loggingMiddleware = (request, response, next) => {
+//   console.log(`${request.method}-${request.url}`);
+
+//   //the next() function tells the program to call the next function/middleware in the case where you have more than 1 middleware or a function after a middleware
+//   next()
+
+// }
+// app.use(loggingMiddleware)
+
+const resolveIndexByUserId = (request, response, next) => {
+  const {
+    params: { id },
+  } = request;
+
+  const parseId = parseInt(id);
+  if (isNaN(parseId)) return response.sendStatus(400);
+  const findUserIndex = mockUsers.findIndex((user) => user.id === parseId);
+  if (findUserIndex === -1) return response.sendStatus(404);
+
+  //we dynamically assigned a method to the request object
+  request.findUserIndex = findUserIndex;
+  next();
+};
 const mockUsers = [
   { id: 1, username: "anne", displayName: "anney" },
   { id: 2, username: "nsikak", displayName: "nsila" },
@@ -17,10 +41,18 @@ const mockUsers = [
 //setting up a simple GET request
 
 //landing page route
-app.get("/", (request, response) => {
-  //response.send("Hello World !")
-  response.status(201).send("Hollla");
-});
+app.get(
+  "/",
+  (request, response, next) => {
+    //another intance of using middleware is inside a request handled liek this
+    console.log("Base URL");
+    next();
+  },
+  (request, response) => {
+    //response.send("Hello World !")
+    response.status(201).send("Hollla");
+  }
+);
 
 //users api
 app.get("/api/users", (request, response) => {
@@ -61,8 +93,6 @@ app.get("/api/users/:id", (request, response) => {
 
 //set up Post request
 app.post("/api/users", (request, response) => {
-  console.log(request.body);
-
   const { body } = request;
   const newUser = { id: mockUsers[mockUsers.length - 1].id + 1, ...body };
 
@@ -73,28 +103,33 @@ app.post("/api/users", (request, response) => {
 
 //Set up a Put request by specific ids(ie using route params)
 
-app.put("/api/users/:id", (request, response) => {
+app.put("/api/users/:id", resolveIndexByUserId, (request, response) => {
+  const { body, findUserIndex } = request;
+
+  mockUsers[findUserIndex] = { id: mockUsers[findUserIndex].id, ...body };
+
+  return response.sendStatus(200);
+});
+
+//SET UP A PATCH REQUEST!!!!
+app.patch("/api/users/:id", resolveIndexByUserId, (request, response) => {
+  const { body, findUserIndex } = request;
+  mockUsers[findUserIndex] = { ...mockUsers[findUserIndex], ...body };
+  return response.sendStatus(204);
+});
+
+//SET UP A DELETE REQUEST
+app.delete("/api/users/:id", (request, response) => {
   const {
-    body,
     params: { id },
   } = request;
 
-  const parsedId = parseInt(id);
-  if (isNaN(parsedId)) return response.sendStatus(400);
-
-  const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId); // this line was the problem it needed to be expliciitily returned
-
-  //if the user isnt found parsedId will return false meaning the findUserIndex will return -1 so we have to deal with said case
+  const parseId = parseInt(id);
+  if (isNaN(parseId)) return response.sendStatus(400);
+  const findUserIndex = mockUsers.findIndex((user) => user.id === parseId);
   if (findUserIndex === -1) return response.sendStatus(404);
 
-  mockUsers[findUserIndex] = { id: parsedId, ...body };
-  console.log(request.body);
-  console.log(request.query);
-  console.log(request.params);
-  console.log(response.query);
-  console.log(response.params);
-  console.log(response.body);
-
+  mockUsers.splice(findUserIndex, 1);
   return response.sendStatus(200);
 });
 
